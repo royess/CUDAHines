@@ -1,0 +1,14 @@
+# cmake
+.idea
+cmake-build-debug
+
+# Input data
+data
+
+# Materials
+Background.pdf
+cuHinesBatch.pdf
+Description.pdf
+
+# Mac desktop layout
+.DS_Store
