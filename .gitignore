@@ -1,14 +1,18 @@
-# CLion
-.idea
-cmake-build-debug
-
 # Input data
 data
+
+# Ouptpur results
+sresult
+presult
+cresult
+
+# Executables
+bin
 
 # Materials
 Background.pdf
 cuHinesBatch.pdf
 Description.pdf
 
-# Mac desktop layout
-.DS_Store
+# playground
+playground
