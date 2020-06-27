@@ -1,8 +1,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
-#include <cmath>
-#include<cstring>
+#include <cstring>
 
 void HinesAlgo (
     double *u, double *l, double *d,
@@ -25,23 +24,28 @@ void HinesAlgo (
     }
 }
 
-int main(int argc, char * argv[]) {
+int main (int argc, char * argv[]) {
     FILE *fp;
     clock_t time;
     int repeatNum;
 
+    // origin data
     int *id; double *u; double *l;
     double *d; double *rhs; int *p;
 
+    // result
     int *id1; double *u1; double *l1;
     double *d1; double *rhs1; int *p1;
 
-    int N;
-    
+    int N; // number of nodes
+
+
+    // read data
     fp = fopen(argv[1], "r");
 
     fscanf(fp, "%d", &N);
 
+    // allocate space
     id = new int [N]; u = new double [N]; l = new double [N];
     d = new double [N]; rhs = new double [N]; p = new int [N];
 
@@ -65,6 +69,7 @@ int main(int argc, char * argv[]) {
     time = clock();
 
     for (int i=0;i<repeatNum;++i) {
+        memcpy(id1, id, N*sizeof(double));
         memcpy(u1, u, N*sizeof(double));
         memcpy(l1, l, N*sizeof(double));
         memcpy(d1, d, N*sizeof(double));
@@ -76,8 +81,9 @@ int main(int argc, char * argv[]) {
 
     time = clock() - time;
 
-    printf("Serial time cost: %.2f secomds.\n", static_cast<double>(time)/CLOCKS_PER_SEC);
+    printf("Serial time cost of %d runs: %.2f seconds.\n", repeatNum, static_cast<double>(time)/CLOCKS_PER_SEC);
 
+    // write result
     fp = fopen(argv[2], "w+");
 
     for (int i=0;i<N;++i) {

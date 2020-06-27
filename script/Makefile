@@ -7,7 +7,7 @@ serial: ../src/serial.cc
 	g++ -O2 -std=c++11 ../src/serial.cc -o ../bin/serial
 
 parallel: ../src/parallel.cu
-	nvcc ../src/serial.cu -o ../bin/parallel
+	nvcc -O2 ../src/parallel.cu -o ../bin/parallel
 
 clean:
-	rm -f ../bin/serial
+	rm -f ../bin/serial ../bin/parallel
