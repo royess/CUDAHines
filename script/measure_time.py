@@ -6,12 +6,17 @@
 import os
 import sys
 
-# describe which cases to run and how many times
+# describe case ids and runs times
 run_dict = {
-    9 : [500, 1000, 2000],
-    10 : [500, 1000, 2000],
-    11 : [500, 1000, 2000],
-    12 : [500, 1000, 2000]
+    # small system
+    7 : [512, 1024, 2048],
+    8 : [512, 1024, 2048],
+
+    # large system
+    9 : [64, 128, 256, 512],
+    10 : [64, 128, 256],
+    11 : [32, 64],
+    12 : [32]
 }
 
 os.chdir('../bin')

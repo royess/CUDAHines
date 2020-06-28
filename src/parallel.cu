@@ -16,24 +16,28 @@ __global__ void HinesAlgo (
     double factor;
     int offset = blockIdx.x * N;
 
-    for (i=N-1+offset;i>=1+offset;--i) {
-        factor = u[i] / d[i];
-        d[p[i]+offset] -= factor * l[i];
-        rhs[p[i]+offset] -= factor * rhs[i];
+    for (i=N-1;i>=1;--i) {
+        factor = u[i+offset] / d[i+offset];
+        d[p[i]+offset] -= factor * l[i+offset];
+        rhs[p[i]+offset] -= factor * rhs[i+offset];
     }
 
     rhs[0+offset] /= d[0+offset];
 
-    for (i=1+offset;i<=N-1+offset;++i) {
-        rhs[i] -= l[i] * rhs[p[i]+offset];
-        rhs[i] /= d[i];
+    for (i=1;i<=N-1;++i) {
+        rhs[i+offset] -= l[i+offset] * rhs[p[i]+offset];
+        rhs[i+offset] /= d[i+offset];
     }
 }
 
+// the main function receives 3 parameters: input path, output path and the number of repeated runs
+// the number of repeated runs is required to be a multiple of 32
 int main (int argc, char * argv[]) {
     FILE *fp;
     clock_t time;
-    int repeatNum;
+    int runNum;
+    cudaDeviceProp devProp;
+    int blockNum, blockSize;
 
     // Host data
     int *id; double *u; double *l;
@@ -61,50 +65,59 @@ int main (int argc, char * argv[]) {
 
     fclose(fp);
 
-    if (argc==4) {
-        repeatNum = atoi(argv[3]);
-    } else {
-        repeatNum = 1;
+    runNum = atoi(argv[3]);
+
+    // choose grid dim and block dim by number of SMs and number of runs
+    blockNum = -1;
+
+    for (blockSize=256;blockSize>=32;blockSize>>=1) {
+        if (runNum%blockSize==0) {
+            blockNum = runNum / blockSize;
+            if (blockNum>=devProp.multiProcessorCount) {
+                break;
+            }
+        }
+    }
+
+    if (blockNum==-1) {
+        printf("Number of runs is not a multiple of 32.");
+        return -1;
     }
 
     // allocate space for device data
-    cudaMalloc(reinterpret_cast<void **>(&id1), repeatNum*N*sizeof(int));
-    cudaMalloc(reinterpret_cast<void **>(&u1), repeatNum*N*sizeof(double));
-    cudaMalloc(reinterpret_cast<void **>(&l1), repeatNum*N*sizeof(double));
-    cudaMalloc(reinterpret_cast<void **>(&d1), repeatNum*N*sizeof(double));
-    cudaMalloc(reinterpret_cast<void **>(&rhs1), repeatNum*N*sizeof(double));
-    cudaMalloc(reinterpret_cast<void **>(&p1), repeatNum*N*sizeof(int));
+    cudaMalloc(reinterpret_cast<void **>(&id1), N*sizeof(int));
+    cudaMalloc(reinterpret_cast<void **>(&u1), runNum*N*sizeof(double));
+    cudaMalloc(reinterpret_cast<void **>(&l1), runNum*N*sizeof(double));
+    cudaMalloc(reinterpret_cast<void **>(&d1), runNum*N*sizeof(double));
+    cudaMalloc(reinterpret_cast<void **>(&rhs1), runNum*N*sizeof(double));
+    cudaMalloc(reinterpret_cast<void **>(&p1), N*sizeof(int));
 
     time = clock(); // include time for device memory copy so that comparison to serial code is fair
 
     // copy host data to device data
-    for (int i=0;i<repeatNum;++i) {
-        cudaMemcpy(id1+i*N, id, N*sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(id1, id, N*sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(p1, p, N*sizeof(int), cudaMemcpyHostToDevice);
+
+    for (int i=0;i<runNum;++i) {   
         cudaMemcpy(u1+i*N, u, N*sizeof(double), cudaMemcpyHostToDevice);
         cudaMemcpy(l1+i*N, l, N*sizeof(double), cudaMemcpyHostToDevice);
         cudaMemcpy(d1+i*N, d, N*sizeof(double), cudaMemcpyHostToDevice);
         cudaMemcpy(rhs1+i*N, rhs, N*sizeof(double), cudaMemcpyHostToDevice);
-        cudaMemcpy(p1+i*N, p, N*sizeof(int), cudaMemcpyHostToDevice);
     }
 
-    dim3 dimGrid (repeatNum, 1); // each copy of Hines system, one block
-    dim3 dimBlock(1, 1, 1); // each block, one thread
-
-    HinesAlgo <<<dimGrid, dimBlock>>> (u1, l1, d1, rhs1, p1, N);
+    HinesAlgo <<<blockNum, blockSize>>> (u1, l1, d1, rhs1, p1, N);
 
     cudaDeviceSynchronize();
 
     // copy result back to host data
-    cudaMemcpy(id, id1, N*sizeof(int), cudaMemcpyDeviceToHost);
     cudaMemcpy(u, u1, N*sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(l, l1, N*sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(d, d1, N*sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(rhs, rhs1, N*sizeof(double), cudaMemcpyDeviceToHost);
-    cudaMemcpy(p, p1, N*sizeof(int), cudaMemcpyDeviceToHost);
 
     time = clock() - time;
 
-    printf("Parallel time cost of %d runs: %.2f seconds.\n", repeatNum, static_cast<double>(time)/CLOCKS_PER_SEC);
+    printf("Parallel time cost of %d runs: %.2f seconds.\n", runNum, static_cast<double>(time)/CLOCKS_PER_SEC);
 
     // write result
     fp = fopen(argv[2], "w+");
@@ -119,7 +132,4 @@ int main (int argc, char * argv[]) {
 
     delete[] id; delete[] u; delete[] l;
     delete[] d; delete[] rhs; delete[] p;
-
-    cudaFree(id1); cudaFree(u1); cudaFree(l1);
-    cudaFree(d1); cudaFree(rhs1); cudaFree(p1);
 }
