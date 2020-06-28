@@ -24,6 +24,8 @@ The executables are built into `bin`.
 
 # Test
 
+## Single Run
+
 Run the serial version on case 1:
 
 ```bash
@@ -40,3 +42,18 @@ Run the verification executable on case 1:
 ```bash
 ./check ../data/case1.txt ../cresult/res1.txt
 ```
+
+## Multiple Runs
+
+You can also run a single case for multiple times.
+
+Run the serial version on case 1 for 100 times:
+```bash
+./serial ../data/case1.txt ../sresult/res1.txt 100
+```
+Run the parallel version on case 1:
+
+```bash
+./parallel ../data/case1.txt ../presult/res1.txt 100
+```
+

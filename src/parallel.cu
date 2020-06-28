@@ -1,3 +1,7 @@
+// Yuxuan, 27 June
+// Parallel (CUDA) version of Hines algorthm.
+
+
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
@@ -100,7 +104,7 @@ int main (int argc, char * argv[]) {
 
     time = clock() - time;
 
-    printf("Serial time cost of %d runs: %.2f seconds.\n", repeatNum, static_cast<double>(time)/CLOCKS_PER_SEC);
+    printf("Parallel time cost of %d runs: %.2f seconds.\n", repeatNum, static_cast<double>(time)/CLOCKS_PER_SEC);
 
     // write result
     fp = fopen(argv[2], "w+");

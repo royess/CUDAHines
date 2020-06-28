@@ -1,3 +1,6 @@
+// Yuxuan, 27 June
+// Serial version of Hines algorthm.
+
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
